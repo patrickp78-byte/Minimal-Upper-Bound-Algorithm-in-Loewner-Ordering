@@ -10,6 +10,14 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
+
+dir_path = os.path.dirname(__file__) ; print(dir_path)
+current = os.getcwd() ;print(f'old dr: {current}')
+os.chdir(dir_path)
+new_dr = os.getcwd() ;print(f'new dr: {new_dr}')
+
+
+
 # making elipse
 a = np.array([
     [2, 0],
@@ -58,14 +66,15 @@ matrix_c = making_ellipse(c)
 matrix_d = making_ellipse(d)
 
 
+all_circle = [matrix_a,matrix_b,matrix_c,matrix_d]
+names = ['a','b','c','d']
+
 fig, ax =plt.subplots()
-# ax.plot(x,y, label = 'circle')
-ax.plot(matrix_a[0,:], matrix_a[1,:], label = 'matrix_a' )
-ax.plot(matrix_b[0,:], matrix_b[1,:], label = 'matrix_b' )
-ax.plot(matrix_c[0,:], matrix_c[1,:], label = 'matrix_c' )
-ax.plot(matrix_d[0,:], matrix_d[1,:], label = 'matrix_d' )
-plt.legend(loc= 'upper left')
+for i in range(len(all_circle)):
+    # ax.plot(x,y, label = 'circle')
+    ax.plot(all_circle[i][0,:], all_circle[i][1,:], label = f'matrix_{names[i]}')
+    
+plt.legend(loc= 'upper right')
 plt.grid()
 plt.show()
-sys.exit()
 
