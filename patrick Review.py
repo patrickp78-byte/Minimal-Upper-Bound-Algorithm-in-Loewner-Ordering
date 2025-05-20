@@ -108,7 +108,7 @@ D = np.array([
     [-1, 0,  1]
 ])
 
-def threeD_graph(matrixz,color):
+def threeD_graph(matrixz,name):
     
     def three_by_three(matrix):
         #Create a linear interporlation of phi (from 0 to pi) and theta (from 0 to 2pi) with 10 points
@@ -152,21 +152,24 @@ def threeD_graph(matrixz,color):
         
         return [x_trans,y_trans,z_trans]
 
-    colors = color
-    
+    m_name = name
+    color_names = ['blue', 'orange', 'green', 'red', 'purple',
+               'brown', 'pink', 'gray', 'olive', 'cyan']
+    alpha = np.linspace(0, 0.5, len(matrixz))
     matrix_x = []
 
     for i in matrixz:
         coordinate = three_by_three(i)
         matrix_x.append(coordinate)
     
+    
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(1,1,1, projection='3d')
     for i in range(len(matrix_x)):
         new_coor = matrix_x[i]
         x,y,z = new_coor[0],new_coor[1],new_coor[2]   
-        ax.plot_surface(x,y,z, color=colors[i][0],  edgecolor = colors[i][1],  alpha = colors[i][2], label = f'matrix: {colors[i][3]}' )
-        # ax.plot_surface(x,y,z, color=colors[i][0],  alpha = colors[i][2], label = f'matrix: {colors[i][3]}' )
+        #ax.plot_surface(x,y,z, color=colors[i][0],  edgecolor = colors[i][1],  alpha = colors[i][2], label = f'matrix: {colors[i][3]}' )
+        ax.plot_surface(x,y,z, edgecolor = color_names[i],  alpha = np.round(alpha[i],decimals= 2), label = f'matrix: {m_name[i]}' )
     ax.set_box_aspect([1, 1, 1])
     ax.set_title('Ellipse')
     ax.set_xlabel('X-axis')
@@ -174,13 +177,107 @@ def threeD_graph(matrixz,color):
     plt.legend()
 
 
-c= [('navy','blue',0.5,"A"),('lightcoral','red',0.4,"B"), ('seagreen','green',0.3,"C"), ('violet','fuchsia',0.2,"D") ]
-temp = threeD_graph([A,B,C,D],c)
+name= ["A","B","C","D"]
+temp = threeD_graph([A,B,C,D],name)
 
 
 #%%
+import scipy as sc
+
 
 # Checks if matrix C is a symmetrix and minimal for A and C
+
+A = np.array([[1,0],
+              [0,0]])
+
+B = np.array([[0,0],
+              [0,1]])
+
+# C =np.array([[1,0],
+#              [0,1]])
+
+
+C =np.array([[2,np.sqrt(2)],
+              [np.sqrt(2),2]])
+
+# A = np.array([
+#     [2, -1,  0],
+#     [-1, 2, -1],
+#     [0, -1,  2]
+# ])
+
+# B = np.array([
+#     [1, 2, 3],
+#     [0, 4, 5],
+#     [0, 0, 6]
+# ])
+
+def minimal_check(a,b,c):
+    ma_array = [a,b,c]
+    # Checks if a matrix Semi Positive Matrix
+    def psd_check(matrix):
+        
+        symmetric = np.allclose(matrix, matrix.T)
+        if symmetric == False:
+            return f'Matrix Not Symmetric'
+        else:
+            try:
+                chol = np.linalg.cholesky(matrix)
+                return f'Positive Semi Definite'
+            except np.linalg.LinAlgError as e:
+                return f'Positive Definite'
+    check = []
+    for i in ma_array:
+        checking = psd_check(i)
+        if checking == 'Positive Semi Definite' or checking =='Positive Definite':
+            check.append(True)
+        else:
+            check.append(False)
+            
+    is_true = all(check)
+    if is_true == True:
+        c_minus_a = ma_array[2] -ma_array[0]
+        c_minus_b = ma_array[2] -ma_array[1]      
+        c_minus_a_null = sc.linalg.null_space(c_minus_a)
+        c_minus_b_null = sc.linalg.null_space(c_minus_b)  
+        # combines the 2 matrix together
+        combine_nulls = np.column_stack([c_minus_a_null,c_minus_b_null])
+        # uses SVD to count how many linearly independet col we have
+        rank = np.linalg.matrix_rank(combine_nulls)
+        # This tells us how many columns we have in the matrix
+        num_cols = combine_nulls.shape[1]
+        if rank == num_cols:
+            return print(f'Matrix C is minimal: {c}')
+        else:
+            return print(f'Matrix C is minimal: {c}')
+    else:
+        print('one of the matrix is not Symmetric')
+
+minimality_check = minimal_check(A,B,C)
+
+
+
+
+sys.exit()
+
+
+#scipy method
+null = sc.linalg.null_space(C - B)
+
+tol = 1e-10
+u, s, vh = np.linalg.svd(C-B)
+rank = (s>tol).sum()
+null_space = vh[rank:].T
+
+
+
+
+
+
+
+
+
+
 
 
 
