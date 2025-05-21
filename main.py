@@ -12,9 +12,9 @@ Notes: Depends on the 'matrix_input' module which must contain a 'file_to_matrix
 
 @author: patrick, jaunie
 """
-
 import sys
-import matrix_input as mi
+import matrix_functions as mf
+import graphing_functions as gf
 
 def main():
     """
@@ -35,12 +35,18 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python main.py <filename1> [<filename2> ...]")
         return
+    
+    evals = []
 
     for arg in sys.argv[1:]:
         filename = 'inputs/' + arg
         print(f"\nProcessing: {filename}")
-        matrix = mi.file_to_matrix(filename)
+        matrix = mf.file_to_matrix(filename)
         print("Matrix: \n", matrix, "\n")
+        eigs = mf.get_eigens(matrix)
+        evals.append(eigs)
+    
+    gf.plot_ellipse(evals)
 
 if __name__ == "__main__":
     main()
