@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 21 2025
-Last Modified: Tue May 21 2025, 10:30 AM
+Last Modified: Tue May 23 2025, 2:57 AM
 
 File Name: graphing_functions.py
 Description: Contains functions for generating and plotting ellipses and ellipsoids 
@@ -33,8 +33,13 @@ def create_ellipse(eigvals: 'd.np.ndarray', eigvecs: 'd.np.ndarray') -> 'd.np.nd
     # Parameratirization unit circle
     theta = d.np.linspace(0, 2 * d.np.pi, 100)
     unit_circle = d.np.stack((d.np.cos(theta), d.np.sin(theta)), axis=0)
+
+    # Replace zero eigenvalues with small number to simulate flattening
+    safe_eigvals = d.np.where(eigvals > 1e-1, eigvals, 1e-1)
+    scale = 1 / d.np.sqrt(safe_eigvals)
+
     # Transforming circle
-    transform = d.np.matmul(eigvecs, d.np.diag(1 / d.np.sqrt(eigvals)))
+    transform = d.np.matmul(eigvecs, d.np.diag(scale))
     ellipse = d.np.matmul(transform, unit_circle)
     return ellipse
 
@@ -53,7 +58,8 @@ def create_ellipsoid(eigvals: 'd.np.ndarray', eigvecs: 'd.np.ndarray') -> 'd.np.
         numpy.ndarray
             Transformed points of the ellipsoid (3, 50, 50)
     """
-    axes_length = 1 / d.np.sqrt(eigvals)
+    safe_eigvals = d.np.where(eigvals > 1e-1, eigvals, 1e-1)
+    axes_length = 1 / d.np.sqrt(safe_eigvals)
 
     # Create a linear interporlation of phi (from 0 to pi) and theta (from 0 to 2pi) with 50 points
     phi_vals = d.np.linspace(0, d.np.pi, 50)
@@ -75,7 +81,7 @@ def create_ellipsoid(eigvals: 'd.np.ndarray', eigvecs: 'd.np.ndarray') -> 'd.np.
     return ellipsoid
 
 
-def plot_ellipse(ellipse_data_list: list[tuple['d.np.ndarray', 'd.np.ndarray']]) -> None:
+def plot_ellipse(ellipse_data_list: list[tuple['d.np.ndarray', 'd.np.ndarray']], labels: list[str]) -> None:
     """
     Plots one or more ellipses (2D) or ellipsoids (3D) using eigenvalues and eigenvectors.
 
@@ -84,6 +90,7 @@ def plot_ellipse(ellipse_data_list: list[tuple['d.np.ndarray', 'd.np.ndarray']])
             Each tuple contains:
                 - eigvals: numpy.ndarray of eigenvalues (2 or 3)
                 - eigvecs: numpy.ndarray of eigenvectors matrix (2x2 or 3x3)
+        labels : list of strings
 
     Returns:
         None
@@ -103,13 +110,14 @@ def plot_ellipse(ellipse_data_list: list[tuple['d.np.ndarray', 'd.np.ndarray']])
     else:
         d.plt.figure()
 
-    for eigvals, eigvecs in ellipse_data_list:
+    for i, (eigvals, eigvecs) in enumerate(ellipse_data_list):
+        label = labels[i] if i < len(labels) else f"Matrix {i+1}"
         if len(eigvals) == 2:
             ellipse = create_ellipse(eigvals, eigvecs)
-            d.plt.plot(ellipse[0], ellipse[1])
+            d.plt.plot(ellipse[0], ellipse[1], label=label)
         elif len(eigvals) == 3:
             ellipsoid = create_ellipsoid(eigvals, eigvecs)
-            ax.plot_surface(ellipsoid[0], ellipsoid[1], ellipsoid[2], alpha=0.6)
+            ax.plot_surface(ellipsoid[0], ellipsoid[1], ellipsoid[2], alpha=0.6, label=label)
         else:
             raise ValueError("Eigenvalues must have length 2 or 3 for plotting.")
 
@@ -118,4 +126,5 @@ def plot_ellipse(ellipse_data_list: list[tuple['d.np.ndarray', 'd.np.ndarray']])
         d.plt.axvline(0, color='black', linewidth=1)
         d.plt.grid(color='lightgray', linestyle='--')
 
+    d.plt.legend()
     d.plt.show()

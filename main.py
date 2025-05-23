@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May 15 21:48:02 2025
-Last Modified: Tue May 21 2025, 10:00 AM
+Created on Thu May 15 2025
+Last Modified: Tue May 23 2025, 2:38 AM
 
 File Name: main.py
 Description: Entry point for processing one or more matrix input files. 
-             Reads each specified file from the 'inputs' directory, converts 
-             its contents into a matrix, and prints the matrix to the console.
+             For each file, the script reads the matrix, prints it, computes 
+             its eigenvalues and eigenvectors, and visualizes it as an ellipse 
+             or ellipsoid. Also checks whether the first matrix is an upper 
+             bound or a minimal upper bound.
 
-Notes: Depends on the 'matrix_input' module which must contain a 'file_to_matrix' function.
+Notes: 
+    - Expects input files in the 'inputs/' directory.
 
 @author: patrick, jaunie
 """
+
 import sys
 import matrix_functions as mf
 import graphing_functions as gf
@@ -36,7 +40,8 @@ def main():
         print("Usage: python main.py <filename1> [<filename2> ...]")
         return
     
-    evals = []
+    evals = [] # list of eigenvalues and eigenvectors
+    labels = [] # corresponding file names
     matrices = []
 
     for arg in sys.argv[1:]:
@@ -47,6 +52,7 @@ def main():
         print("Matrix: \n", matrix, "\n")
         eigs = mf.get_eigens(matrix)
         evals.append(eigs)
+        labels.append(arg)
 
     if len(matrices) > 1:
         if mf.is_upperbound(matrices[0], matrices[1:])[0]:
@@ -59,7 +65,7 @@ def main():
         else:
             print("Matrix: \n", matrices[0], "\n is not a minimal upperbound")
     
-    gf.plot_ellipse(evals)
+    gf.plot_ellipse(evals, labels)
 
 if __name__ == "__main__":
     main()
