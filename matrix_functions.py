@@ -125,8 +125,8 @@ def minimality_check(matrices: list['d.np.ndarray']) -> bool:
     M = matrices[0]
     dim = M.shape[0]
 
-    step_1, upperbd_results = is_upperbound(M, matrices)
-    step_2 = is_minimal(upperbd_results, dim) if step_1 else False
+    step_1, upperbd_results = is_upperbound(M, matrices[1:])
+    step_2 = is_minimal(upperbd_results, dim) # if step_1 else False
 
     return step_1 and step_2
 

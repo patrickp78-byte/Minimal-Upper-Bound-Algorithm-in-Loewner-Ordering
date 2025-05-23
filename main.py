@@ -49,7 +49,7 @@ def main():
         evals.append(eigs)
 
     if len(matrices) > 1:
-        if mf.is_upperbound(matrices[0], matrices[1:]):
+        if mf.is_upperbound(matrices[0], matrices[1:])[0]:
             print("Matrix: \n", matrices[0], "\n is an upperbound")
         else:
             print("Matrix: \n", matrices[0], "\n is not an upperbound")
