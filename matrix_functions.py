@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 21 2025
-Last Modified: Tue May 22 2025, 11:36 PM
+Last Modified: Tue May 27 2025, 2:37 PM
 
 File Name: matrix_functions.py
 Description: Contains utility functions for working with matrices, including
@@ -126,7 +126,7 @@ def minimality_check(matrices: list['d.np.ndarray']) -> bool:
     dim = M.shape[0]
 
     step_1, upperbd_results = is_upperbound(M, matrices[1:])
-    step_2 = is_minimal(upperbd_results, dim) # if step_1 else False
+    step_2 = is_minimal(upperbd_results, dim) if step_1 else False
 
     return step_1 and step_2
 
@@ -171,15 +171,17 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> bool:
             True if the nullspaces span the full space, False otherwise.
     """
     null_bases = []
+    print(upperbd_results)
 
     for upbd_matrix in upperbd_results:
-        nullspace = d.sy.Matrix(upbd_matrix).nullspace()
-        null_bases.extend(nullspace)
+        null_space = d.sc.linalg.null_space(upbd_matrix, rcond=1e-7)
+        if null_space.size > 0:
+            null_bases.append(null_space)
 
     if not null_bases:
         return False
 
-    combined = d.sy.Matrix.hstack(*null_bases)
-    rank = combined.rank()
+    combine_nulls = d.np.column_stack(null_bases)
+    rank = d.np.linalg.matrix_rank(combine_nulls)
 
     return rank >= dim
