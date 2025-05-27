@@ -161,14 +161,24 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> bool:
     Checks whether the nullspaces of the differences (M - Ai) span the full space F^n.
 
     Parameters:
-        upperbd_results : list of numpy.ndarray
-            List of matrices resulting from M - Ai.
-        dim : int
-            Dimension of the space (should equal matrix size).
+    upperbd_results : list of numpy.ndarray
+        List of matrices resulting from M - Ai.
+    dim : int
+        Dimension of the space (should equal matrix size).
 
     Returns:
+    tuple
         bool
             True if the nullspaces span the full space, False otherwise.
+        numpy.ndarray
+            The transpose of the combined nullspace basis matrix E^T.
+
+    Raises:
+    ValueError
+        If any matrix in the list is not square or dimensions are inconsistent.
+
+    Example:
+    Returns (True, E_transpose) if the nullspaces of differences span R^n.
     """
     null_bases = []
     print(upperbd_results)
@@ -184,4 +194,4 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> bool:
     combine_nulls = d.np.column_stack(null_bases)
     rank = d.np.linalg.matrix_rank(combine_nulls)
 
-    return rank >= dim
+    return rank >= dim, combine_nulls.T
