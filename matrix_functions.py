@@ -126,7 +126,17 @@ def minimality_check(matrices: list['d.np.ndarray']) -> bool:
     dim = M.shape[0]
 
     step_1, upperbd_results = is_upperbound(M, matrices[1:])
-    step_2 = is_minimal(upperbd_results, dim) if step_1 else False
+    step_2, E = is_minimal(upperbd_results, dim) if step_1 else (False, None)
+
+    # Test: find E perp
+    # if step_2:
+    #     print(E)
+    #     E_t = E.T
+    #     E_perp = d.sc.linalg.null_space(E_t, rcond=1e-7)
+    #     print(E_perp)
+    #     for row_a in E:
+    #         for row_b in E_perp:
+    #             print(f"Dot product: {d.np.dot(row_a, row_b)}")
 
     return step_1 and step_2
 
@@ -149,14 +159,14 @@ def is_upperbound(M: 'd.np.ndarray', matrices: list['d.np.ndarray']) -> tuple[bo
 
     for matrix in matrices:
         this_matrix = M - matrix
-        if cholesky_decomposition(this_matrix) or d.np.linalg.det(this_matrix) == 0:
+        if cholesky_decomposition(this_matrix) or d.np.all(d.np.linalg.eigvalsh(this_matrix) >= -1e-7):
             upperbd_results.append(this_matrix)
         else:
             return False, []
 
     return True, upperbd_results
 
-def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> bool:
+def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> tuple[bool, list['d.np.ndarray']]:
     """
     Checks whether the nullspaces of the differences (M - Ai) span the full space F^n.
 
@@ -171,17 +181,16 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> bool:
         bool
             True if the nullspaces span the full space, False otherwise.
         numpy.ndarray
-            The transpose of the combined nullspace basis matrix E^T.
+            The combined nullspace basis matrix E.
 
     Raises:
     ValueError
         If any matrix in the list is not square or dimensions are inconsistent.
 
     Example:
-    Returns (True, E_transpose) if the nullspaces of differences span R^n.
+    Returns (True, E) if the nullspaces of differences span R^n.
     """
     null_bases = []
-    print(upperbd_results)
 
     for upbd_matrix in upperbd_results:
         null_space = d.sc.linalg.null_space(upbd_matrix, rcond=1e-7)
@@ -189,9 +198,9 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> bool:
             null_bases.append(null_space)
 
     if not null_bases:
-        return False
+        return False, None
 
-    combine_nulls = d.np.column_stack(null_bases)
-    rank = d.np.linalg.matrix_rank(combine_nulls)
+    E = d.np.hstack(null_bases)
+    rank = d.np.linalg.matrix_rank(E)
 
-    return rank >= dim, combine_nulls.T
+    return rank >= dim, E

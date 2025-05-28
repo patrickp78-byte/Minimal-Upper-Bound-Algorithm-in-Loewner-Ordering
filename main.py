@@ -64,7 +64,7 @@ def main():
             print("Matrix: \n", matrices[0], "\n is a minimal upperbound")
         else:
             print("Matrix: \n", matrices[0], "\n is not a minimal upperbound")
-    
+
     gf.plot_ellipse(evals, labels)
 
 if __name__ == "__main__":
