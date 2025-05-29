@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu May 15 2025
-Last Modified: Tue May 23 2025, 2:38 AM
+Last Modified: Tue May 29 2025, 2:33 PM
 
 File Name: main.py
 Description: Entry point for processing one or more matrix input files. 
@@ -55,19 +55,13 @@ def main():
         labels.append(arg)
 
     if len(matrices) > 1:
-        is_upbd, upbd_res = mf.is_upperbound(matrices[0], matrices[1:])
-        if is_upbd:
-            print("Matrix: \n", matrices[0], "\n is an upperbound")
+        is_min_upbd, M = mf.minimality_check(matrices)
 
-            is_min = mf.is_minimal(upbd_res, matrices[0].shape[0])[0]
-            if is_min:
-                print("Matrix: \n", matrices[0], "\n is a minimal upperbound")
-            else:
-                print("Matrix: \n", matrices[0], "\n is not a minimal upperbound")
-        else:
-            print("Matrix: \n", matrices[0], "\n is not an upperbound")
-
-        mf.minimality_check(matrices)
+        if is_min_upbd:
+            matrices.append(M)
+            eigs = mf.get_eigens(M)
+            evals.append(eigs)
+            labels.append("answer")
 
     gf.plot_ellipse(evals, labels)
 

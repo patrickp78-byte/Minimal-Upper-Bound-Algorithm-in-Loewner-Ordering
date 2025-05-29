@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 21 2025
-Last Modified: Tue May 28 2025, 3:22 AM
+Last Modified: Tue May 29 2025, 2:33 PM
 
 File Name: matrix_functions.py
 Description: Contains utility functions for working with matrices, including
@@ -132,13 +132,23 @@ def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, 'd.np.ndarra
     step_1, upperbd_results = is_upperbound(M, matrices[1:])
     step_2, E = is_minimal(upperbd_results, dim) if step_1 else (False, None)
 
+    if step_1:
+        print(f"Matrix: \n {M} \n is an upperbound")
+
+        if step_2:
+            print(f"Matrix: \n {M} \n is a minimal upperbound")
+        else:
+            print(f"Matrix: \n {M} \n is not a minimal upperbound")
+    else:
+        print(f"Matrix: \n {M} \n is not an upperbound")
+
     if step_1 and not step_2:
         # Generate new M from projection and try again
         new_M = minimize_upperbound(M, upperbd_results, E, dim)
-        print("New M = ", new_M)
+        print(f"New Matrix = \n {new_M} \n")
         return minimality_check([new_M] + matrices[1:])
 
-    return step_1 and step_2
+    return step_1 and step_2, M
 
 def is_upperbound(M: 'd.np.ndarray', matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.ndarray']]:
     """
