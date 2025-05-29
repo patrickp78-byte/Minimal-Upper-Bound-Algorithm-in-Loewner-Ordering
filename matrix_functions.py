@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 21 2025
-Last Modified: Tue May 27 2025, 2:37 PM
+Last Modified: Tue May 28 2025, 3:22 AM
 
 File Name: matrix_functions.py
 Description: Contains utility functions for working with matrices, including
@@ -106,7 +106,7 @@ def is_symmetric(matrix: 'd.np.ndarray') -> bool:
     """
     return d.np.allclose(matrix, matrix.T)
 
-def minimality_check(matrices: list['d.np.ndarray']) -> bool:
+def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.ndarray']]:
     """
     Checks whether the first matrix in the list is a minimal upper bound of the others.
 
@@ -115,8 +115,11 @@ def minimality_check(matrices: list['d.np.ndarray']) -> bool:
             A list of square matrices. The first matrix is tested against the rest.
 
     Returns:
-        bool
-            True if the first matrix is an upper bound and minimal, False otherwise.
+        tuple:
+            bool
+                True if the first matrix is an upper bound and minimal, False otherwise.
+            numpy.ndarray
+                The combined nullspace basis matrix E.
 
     Raises:
         ValueError
@@ -129,16 +132,23 @@ def minimality_check(matrices: list['d.np.ndarray']) -> bool:
     step_2, E = is_minimal(upperbd_results, dim) if step_1 else (False, None)
 
     # Test: find E perp
-    # if step_2:
-    #     print(E)
-    #     E_t = E.T
-    #     E_perp = d.sc.linalg.null_space(E_t, rcond=1e-7)
-    #     print(E_perp)
-    #     for row_a in E:
-    #         for row_b in E_perp:
-    #             print(f"Dot product: {d.np.dot(row_a, row_b)}")
+    if E is not None and E.shape[1] < dim:
+        # E does not span the full space ⇒ compute E_perp
+        E_perp = d.sc.linalg.null_space(E.T)
 
-    return step_1 and step_2
+        print("E:")
+        print(E)
+        print("E_perp:")
+        print(E_perp)
+
+        # Now pick any unit vector e from E_perp
+        if E_perp.shape[1] > 0:
+            e = E_perp[:, 0]  # First orthogonal direction
+            e = e / d.np.linalg.norm(e)  # Normalize
+            print("Example e in E_perp with ||e|| = 1:")
+            print(e)
+
+    return step_1 and step_2, E
 
 def is_upperbound(M: 'd.np.ndarray', matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.ndarray']]:
     """
@@ -198,8 +208,8 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> tuple[bool, l
             null_bases.append(null_space)
 
     if not null_bases:
-        return False, None
-
+        return False, d.np.empty((dim, 0))
+    
     E = d.np.hstack(null_bases)
     rank = d.np.linalg.matrix_rank(E)
 
