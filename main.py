@@ -55,17 +55,21 @@ def main():
         labels.append(arg)
 
     if len(matrices) > 1:
-        if mf.is_upperbound(matrices[0], matrices[1:])[0]:
+        is_upbd, upbd_res = mf.is_upperbound(matrices[0], matrices[1:])
+        if is_upbd:
             print("Matrix: \n", matrices[0], "\n is an upperbound")
+
+            is_min = mf.is_minimal(upbd_res, matrices[0].shape[0])[0]
+            if is_min:
+                print("Matrix: \n", matrices[0], "\n is a minimal upperbound")
+            else:
+                print("Matrix: \n", matrices[0], "\n is not a minimal upperbound")
         else:
             print("Matrix: \n", matrices[0], "\n is not an upperbound")
-        
-        if mf.minimality_check(matrices)[0]:
-            print("Matrix: \n", matrices[0], "\n is a minimal upperbound")
-        else:
-            print("Matrix: \n", matrices[0], "\n is not a minimal upperbound")
 
-    # gf.plot_ellipse(evals, labels)
+        mf.minimality_check(matrices)
+
+    gf.plot_ellipse(evals, labels)
 
 if __name__ == "__main__":
     main()

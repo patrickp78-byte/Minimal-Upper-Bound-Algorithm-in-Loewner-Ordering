@@ -106,9 +106,10 @@ def is_symmetric(matrix: 'd.np.ndarray') -> bool:
     """
     return d.np.allclose(matrix, matrix.T)
 
-def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.ndarray']]:
+def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, 'd.np.ndarray']:
     """
     Checks whether the first matrix in the list is a minimal upper bound of the others.
+    If it is an upper bound but not minimal, projects onto the orthogonal space and tries again.
 
     Parameters:
         matrices : list of numpy.ndarray
@@ -119,7 +120,7 @@ def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.n
             bool
                 True if the first matrix is an upper bound and minimal, False otherwise.
             numpy.ndarray
-                The combined nullspace basis matrix E.
+                The combined nullspace basis matrix E from the minimal upper bound.
 
     Raises:
         ValueError
@@ -131,24 +132,13 @@ def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.n
     step_1, upperbd_results = is_upperbound(M, matrices[1:])
     step_2, E = is_minimal(upperbd_results, dim) if step_1 else (False, None)
 
-    # Test: find E perp
-    if E is not None and E.shape[1] < dim:
-        # E does not span the full space ⇒ compute E_perp
-        E_perp = d.sc.linalg.null_space(E.T)
+    if step_1 and not step_2:
+        # Generate new M from projection and try again
+        new_M = minimize_upperbound(M, upperbd_results, E, dim)
+        print("New M = ", new_M)
+        return minimality_check([new_M] + matrices[1:])
 
-        print("E:")
-        print(E)
-        print("E_perp:")
-        print(E_perp)
-
-        # Now pick any unit vector e from E_perp
-        if E_perp.shape[1] > 0:
-            e = E_perp[:, 0]  # First orthogonal direction
-            e = e / d.np.linalg.norm(e)  # Normalize
-            print("Example e in E_perp with ||e|| = 1:")
-            print(e)
-
-    return step_1 and step_2, E
+    return step_1 and step_2
 
 def is_upperbound(M: 'd.np.ndarray', matrices: list['d.np.ndarray']) -> tuple[bool, list['d.np.ndarray']]:
     """
@@ -214,3 +204,48 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> tuple[bool, l
     rank = d.np.linalg.matrix_rank(E)
 
     return rank >= dim, E
+
+def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray'], E: 'd.np.ndarray', dim: int) -> 'd.np.ndarray':
+    """
+    Finds a vector in the orthogonal complement of E, and uses it to project M downward
+    to attempt finding a minimal upper bound.
+
+    Parameters:
+        M : numpy.ndarray
+            The current upper bound matrix.
+        upperbd_results : list of numpy.ndarray
+            The list of (M - Ai) matrices used in upper bound check.
+        E : numpy.ndarray
+            Matrix whose columns are the nullspace basis vectors.
+        dim : int
+            Dimension of the space (should equal matrix size).
+
+    Returns:
+        numpy.ndarray
+            A new matrix M - projection that is closer to a minimal upper bound.
+
+    Raises:
+        RuntimeError
+            If E_perp is empty and no projection direction is found.
+    """
+    if E is None or E.shape[1] >= dim:
+        raise RuntimeError("Cannot compute projection direction; E spans full space or is None.")
+
+    # Compute orthogonal complement of E
+    E_perp = d.sc.linalg.null_space(E.T, rcond=1e-7)
+
+    if E_perp.shape[1] == 0:
+        raise RuntimeError("No orthogonal direction found; E_perp is empty.")
+
+    # Pick a unit vector in E_perp
+    e = E_perp[:, 0]
+    e = e / d.np.linalg.norm(e)
+
+    # Estimate minimal eigenvalue of the difference matrices
+    lambda_min = min(d.np.linalg.eigvalsh(upperbd_results).reshape(-1))
+
+    # Project and update M
+    e_star = e.reshape(-1, 1)
+    projection = lambda_min * e @ e_star
+
+    return M - projection
