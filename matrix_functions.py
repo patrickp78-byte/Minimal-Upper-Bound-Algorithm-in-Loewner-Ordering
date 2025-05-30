@@ -251,11 +251,14 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     e = E_perp[:, 0]
     e = e / d.np.linalg.norm(e)
 
-    # Estimate minimal eigenvalue of the difference matrices
-    lambda_min = min(d.np.linalg.eigvalsh(upperbd_results).reshape(-1))
+    # Estimate minimal eigenvalue of the difference matrices, (find an eigen big enough)
+    eigs = d.np.linalg.eigvalsh(upperbd_results).reshape(-1)
+    safe_eigs = [ei for ei in eigs if ei >= 1e-7]
+    lambda_min = min(safe_eigs)
 
     # Project and update M
     e_star = e.reshape(-1, 1)
     projection = lambda_min * e @ e_star
+    print(f"projection with limit: ", projection)
 
     return M - projection

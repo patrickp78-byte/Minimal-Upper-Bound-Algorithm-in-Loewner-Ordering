@@ -56,12 +56,11 @@ def main():
 
     if len(matrices) > 1:
         is_min_upbd, M = mf.minimality_check(matrices)
+        eigs = mf.get_eigens(M)
+        evals.append(eigs)
 
-        if is_min_upbd:
-            matrices.append(M)
-            eigs = mf.get_eigens(M)
-            evals.append(eigs)
-            labels.append("answer")
+        label = "answer" if is_min_upbd else "failed"
+        labels.append(label)
 
     gf.plot_ellipse(evals, labels)
 
