@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 21 2025
-Last Modified: Tue May 29 2025, 2:33 PM
+Last Modified: Fri May 30 2025, 8:20 PM
 
 File Name: matrix_functions.py
 Description: Contains utility functions for working with matrices, including
@@ -250,6 +250,7 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     # Pick a unit vector in E_perp
     e = E_perp[:, 0]
     e = e / d.np.linalg.norm(e)
+    e = e.reshape(-1, 1)
 
     # Estimate minimal eigenvalue of the difference matrices, (find an eigen big enough)
     eigs = d.np.linalg.eigvalsh(upperbd_results).reshape(-1)
@@ -257,7 +258,7 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     lambda_min = min(safe_eigs)
 
     # Project and update M
-    e_star = e.reshape(-1, 1)
+    e_star = e.reshape(1, -1)
     projection = lambda_min * e @ e_star
     print(f"projection with limit: ", projection)
 
