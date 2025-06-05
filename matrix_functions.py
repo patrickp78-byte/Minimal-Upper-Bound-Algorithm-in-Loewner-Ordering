@@ -247,15 +247,22 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     if E_perp.shape[1] == 0:
         raise RuntimeError("No orthogonal direction found; E_perp is empty.")
 
-    # Pick a unit vector in E_perp
-    e = E_perp[:, 0]
-    e = e / d.np.linalg.norm(e)
-    e = e.reshape(-1, 1)
-
     # Estimate minimal eigenvalue of the difference matrices, (find an eigen big enough)
-    eigs = d.np.linalg.eigvalsh(upperbd_results).reshape(-1)
-    safe_eigs = [ei for ei in eigs if ei >= 1e-7]
+    eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
+    evals = d.np.hstack([pair[0] for pair in eig_pairs])
+    evecs = d.np.hstack([pair[1] for pair in eig_pairs])
+    safe_eigs = [ei for ei in evals if ei >= 1e-7]
     lambda_min = min(safe_eigs)
+
+    # Pick a unit vector in E_perp
+    # col_index = d.np.random.choice(E_perp.shape[1])
+    # e = E_perp[:, col_index]
+    # e = e / d.np.linalg.norm(e)
+    # e = e.reshape(-1, 1)
+
+    max_eval_index = d.np.argmax(evals)
+    e = evecs[:, max_eval_index]
+    e = e.reshape(-1, 1)
 
     # Project and update M
     e_star = e.reshape(1, -1)
