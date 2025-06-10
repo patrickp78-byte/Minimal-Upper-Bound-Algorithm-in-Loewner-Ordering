@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 21 2025
-Last Modified: Fri May 30 2025, 8:20 PM
+Last Modified: Fri Jun 10 2025, 5:36 PM
 
 File Name: matrix_functions.py
 Description: Contains utility functions for working with matrices, including
@@ -247,26 +247,36 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     if E_perp.shape[1] == 0:
         raise RuntimeError("No orthogonal direction found; E_perp is empty.")
 
-    # Estimate minimal eigenvalue of the difference matrices, (find an eigen big enough)
+    # Eigen-decompose all upperbound matrices
     eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
     evals = d.np.hstack([pair[0] for pair in eig_pairs])
     evecs = d.np.hstack([pair[1] for pair in eig_pairs])
-    safe_eigs = [ei for ei in evals if ei >= 1e-7]
-    lambda_min = min(safe_eigs)
 
-    # Pick a unit vector in E_perp
-    # col_index = d.np.random.choice(E_perp.shape[1])
-    # e = E_perp[:, col_index]
-    # e = e / d.np.linalg.norm(e)
-    # e = e.reshape(-1, 1)
-
+    # Use the eigenvector of the largest eigenvalue
     max_eval_index = d.np.argmax(evals)
-    e = evecs[:, max_eval_index]
-    e = e.reshape(-1, 1)
+    e = evecs[:, max_eval_index].reshape(-1, 1)
+
+    # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
+    lambda_candidates = []
+    for Mi in upperbd_results:
+        try:
+            Mi_inv = d.np.linalg.pinv(Mi)
+            val = d.np.dot(e.T, Mi_inv @ e)
+            print(val)
+            if val > 1e-10:  # avoid division by zero, floating point errors
+                lambda_i = 1 / val
+                lambda_candidates.append(lambda_i)
+        except d.np.linalg.LinAlgError:
+            continue  # skip faulty Matrices
+
+    if not lambda_candidates:
+        raise RuntimeError("No valid λ candidates found.")
+
+    lambda_ = min(lambda_candidates)
 
     # Project and update M
     e_star = e.reshape(1, -1)
-    projection = lambda_min * e @ e_star
-    print(f"projection with limit: ", projection)
+    projection = lambda_ * e @ e_star
+    print(f"projection with limit: \n{projection}")
 
     return M - projection
