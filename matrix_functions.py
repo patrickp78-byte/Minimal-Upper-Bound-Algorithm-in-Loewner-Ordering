@@ -106,7 +106,7 @@ def is_symmetric(matrix: 'd.np.ndarray') -> bool:
     """
     return d.np.allclose(matrix, matrix.T)
 
-def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, 'd.np.ndarray']:
+def minimality_check(matrices: list['d.np.ndarray'], steps: int) -> tuple[bool, 'd.np.ndarray']:
     """
     Checks whether the first matrix in the list is a minimal upper bound of the others.
     If it is an upper bound but not minimal, projects onto the orthogonal space and tries again.
@@ -114,6 +114,8 @@ def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, 'd.np.ndarra
     Parameters:
         matrices : list of numpy.ndarray
             A list of square matrices. The first matrix is tested against the rest.
+        steps : int
+            Tracks each time the program recurses
 
     Returns:
         tuple:
@@ -126,6 +128,8 @@ def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, 'd.np.ndarra
         ValueError
             If matrices are not all square or have mismatched dimensions.
     """
+    print(f"Step {steps}")
+
     M = matrices[0]
     dim = M.shape[0]
 
@@ -146,7 +150,8 @@ def minimality_check(matrices: list['d.np.ndarray']) -> tuple[bool, 'd.np.ndarra
         # Generate new M from projection and try again
         new_M = minimize_upperbound(M, upperbd_results, E, dim)
         print(f"New Matrix = \n {new_M} \n")
-        return minimality_check([new_M] + matrices[1:])
+        steps += 1
+        return minimality_check([new_M] + matrices[1:], steps)
 
     return step_1 and step_2, M
 
@@ -243,6 +248,7 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
 
     # Compute orthogonal complement of E
     E_perp = d.sc.linalg.null_space(E.T, rcond=1e-7)
+    print(f"E⟂ = \n{E_perp}")
 
     if E_perp.shape[1] == 0:
         raise RuntimeError("No orthogonal direction found; E_perp is empty.")
@@ -253,8 +259,13 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     evecs = d.np.hstack([pair[1] for pair in eig_pairs])
 
     # Use the eigenvector of the largest eigenvalue
-    max_eval_index = d.np.argmax(evals)
-    e = evecs[:, max_eval_index].reshape(-1, 1)
+    # max_eval_index = d.np.argmax(evals)
+    # e = evecs[:, max_eval_index].reshape(-1, 1)
+
+    # Random e
+    rand_col_idx = d.np.random.choice(E_perp.shape[1])
+    e = E_perp[:, rand_col_idx].reshape(-1, 1)
+    print(f"chosen e = \n{e}")
 
     # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
     lambda_candidates = []
@@ -262,7 +273,6 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         try:
             Mi_inv = d.np.linalg.pinv(Mi)
             val = d.np.dot(e.T, Mi_inv @ e)
-            print(val)
             if val > 1e-10:  # avoid division by zero, floating point errors
                 lambda_i = 1 / val
                 lambda_candidates.append(lambda_i)
@@ -277,6 +287,6 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     # Project and update M
     e_star = e.reshape(1, -1)
     projection = lambda_ * e @ e_star
-    print(f"projection with limit: \n{projection}")
+    print(f"projection with limit: \n{projection} \n with dim = {E_perp.shape[1]} \n")
 
     return M - projection

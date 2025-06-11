@@ -55,7 +55,8 @@ def main():
         labels.append(arg)
 
     if len(matrices) > 1:
-        is_min_upbd, M = mf.minimality_check(matrices)
+        steps = 0
+        is_min_upbd, M = mf.minimality_check(matrices, steps)
         eigs = mf.get_eigens(M)
         evals.append(eigs)
 
