@@ -248,23 +248,27 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
 
     # Compute orthogonal complement of E
     E_perp = d.sc.linalg.null_space(E.T, rcond=1e-7)
-    print(f"E⟂ = \n{E_perp}")
+    rand = d.np.random.rand(E_perp.shape[1], 1)
+    print(f"rand = \n{rand}")
+    E_perp_rand = E_perp @ rand
+    print(f"E⟂ = \n{E_perp_rand}")
 
     if E_perp.shape[1] == 0:
         raise RuntimeError("No orthogonal direction found; E_perp is empty.")
 
     # Eigen-decompose all upperbound matrices
-    eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
-    evals = d.np.hstack([pair[0] for pair in eig_pairs])
-    evecs = d.np.hstack([pair[1] for pair in eig_pairs])
+    # eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
+    # evals = d.np.hstack([pair[0] for pair in eig_pairs])
+    # evecs = d.np.hstack([pair[1] for pair in eig_pairs])
 
     # Use the eigenvector of the largest eigenvalue
     # max_eval_index = d.np.argmax(evals)
     # e = evecs[:, max_eval_index].reshape(-1, 1)
 
     # Random e
-    rand_col_idx = d.np.random.choice(E_perp.shape[1])
+    rand_col_idx = d.np.random.choice(E_perp_rand.shape[1])
     e = E_perp[:, rand_col_idx].reshape(-1, 1)
+    e = E_perp_rand
     print(f"chosen e = \n{e}")
 
     # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
@@ -283,6 +287,8 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         raise RuntimeError("No valid λ candidates found.")
 
     lambda_ = min(lambda_candidates)
+    # evals = [ev for ev in evals if ev >= 1e-7]
+    # lambda_ = min(evals)
 
     # Project and update M
     e_star = e.reshape(1, -1)
