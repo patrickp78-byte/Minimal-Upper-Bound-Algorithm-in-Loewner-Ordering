@@ -17,6 +17,7 @@ Notes:
 """
 
 import sys
+import dependencies as d
 import matrix_functions as mf
 import graphing_functions as gf
 
@@ -43,8 +44,25 @@ def main():
     evals = [] # list of eigenvalues and eigenvectors
     labels = [] # corresponding file names
     matrices = []
+    use_rand = False
+    rand_trials = 1
+    args = []
 
-    for arg in sys.argv[1:]:
+    # Parse args
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] == "--rand":
+            use_rand = True
+            if i + 1 < len(sys.argv) and sys.argv[i + 1].isdigit():
+                rand_trials = int(sys.argv[i + 1])
+                i += 1  # skip the number
+            else:
+                rand_trials = 1
+        else:
+            args.append(sys.argv[i])
+        i += 1
+
+    for arg in args:
         filename = 'inputs/' + arg
         print(f"\nProcessing: {filename}")
         matrix = mf.file_to_matrix(filename)
@@ -55,13 +73,27 @@ def main():
         labels.append(arg)
 
     if len(matrices) > 1:
-        steps = 0
-        is_min_upbd, M = mf.minimality_check(matrices, steps)
-        eigs = mf.get_eigens(M)
-        evals.append(eigs)
+        results = []
+        for i in range(rand_trials):
+            print(f"trial {i}")
+            steps = 0
+            try:
+                is_min_upbd, M = mf.minimality_check(matrices, steps, use_rand)
+                eigs = mf.get_eigens(M)
+                label = f"answer_{i}" if is_min_upbd else f"failure_{i}"
+            except Exception as e:
+                print(f"Trial {i} failed with error: {e}")
+                # Placeholder: zero matrix with same shape as original
+                M = d.np.zeros_like(matrices[0])
+                eigs = mf.get_eigens(M)
+                label = f"error_{i}"
+            
+            results.append(M)
+            evals.append(eigs)
+            labels.append(label)
 
-        label = "answer" if is_min_upbd else "failed"
-        labels.append(label)
+        results = d.np.array(results)
+        print(f"results = \n{results}")
 
     gf.plot_ellipse(evals, labels)
 

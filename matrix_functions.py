@@ -38,7 +38,7 @@ def file_to_matrix(filename: str) -> 'd.np.ndarray':
     Example:
         >>> matrix = file_to_matrix("inputs/data.txt")
     """
-    matrix = d.np.loadtxt(filename, dtype=float)
+    matrix = d.np.loadtxt(filename, dtype=complex)
     return matrix
 
 def get_eigens(matrix: 'd.np.ndarray') -> tuple['d.np.ndarray', 'd.np.ndarray']:
@@ -106,7 +106,7 @@ def is_symmetric(matrix: 'd.np.ndarray') -> bool:
     """
     return d.np.allclose(matrix, matrix.T)
 
-def minimality_check(matrices: list['d.np.ndarray'], steps: int) -> tuple[bool, 'd.np.ndarray']:
+def minimality_check(matrices: list['d.np.ndarray'], steps: int = 0, use_rand: bool = False) -> tuple[bool, 'd.np.ndarray']:
     """
     Checks whether the first matrix in the list is a minimal upper bound of the others.
     If it is an upper bound but not minimal, projects onto the orthogonal space and tries again.
@@ -137,21 +137,21 @@ def minimality_check(matrices: list['d.np.ndarray'], steps: int) -> tuple[bool, 
     step_2, E = is_minimal(upperbd_results, dim) if step_1 else (False, None)
 
     if step_1:
-        print(f"Matrix: \n {M} \n is an upperbound")
+        print(f"Matrix: \n {M} \n is an upperbound \n")
 
         if step_2:
-            print(f"Matrix: \n {M} \n is a minimal upperbound")
+            print(f"Matrix: \n {M} \n is a minimal upperbound \n")
         else:
-            print(f"Matrix: \n {M} \n is not a minimal upperbound")
+            print(f"Matrix: \n {M} \n is not a minimal upperbound \n")
     else:
-        print(f"Matrix: \n {M} \n is not an upperbound")
+        print(f"Matrix: \n {M} \n is not an upperbound \n")
 
     if step_1 and not step_2:
         # Generate new M from projection and try again
-        new_M = minimize_upperbound(M, upperbd_results, E, dim)
+        new_M = minimize_upperbound(M, upperbd_results, E, dim, use_rand)
         print(f"New Matrix = \n {new_M} \n")
         steps += 1
-        return minimality_check([new_M] + matrices[1:], steps)
+        return minimality_check([new_M] + matrices[1:], steps, use_rand)
 
     return step_1 and step_2, M
 
@@ -220,7 +220,7 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> tuple[bool, l
 
     return rank >= dim, E
 
-def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray'], E: 'd.np.ndarray', dim: int) -> 'd.np.ndarray':
+def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray'], E: 'd.np.ndarray', dim: int, use_rand: bool = False) -> 'd.np.ndarray':
     """
     Finds a vector in the orthogonal complement of E, and uses it to project M downward
     to attempt finding a minimal upper bound.
@@ -248,28 +248,23 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
 
     # Compute orthogonal complement of E
     E_perp = d.sc.linalg.null_space(E.T, rcond=1e-7)
-    rand = d.np.random.rand(E_perp.shape[1], 1)
-    print(f"rand = \n{rand}")
-    E_perp_rand = E_perp @ rand
-    print(f"E⟂ = \n{E_perp_rand}")
+    print(f"E perp = \n{E_perp}\n")
 
     if E_perp.shape[1] == 0:
         raise RuntimeError("No orthogonal direction found; E_perp is empty.")
 
-    # Eigen-decompose all upperbound matrices
-    # eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
-    # evals = d.np.hstack([pair[0] for pair in eig_pairs])
-    # evecs = d.np.hstack([pair[1] for pair in eig_pairs])
-
-    # Use the eigenvector of the largest eigenvalue
-    # max_eval_index = d.np.argmax(evals)
-    # e = evecs[:, max_eval_index].reshape(-1, 1)
-
-    # Random e
-    rand_col_idx = d.np.random.choice(E_perp_rand.shape[1])
-    e = E_perp[:, rand_col_idx].reshape(-1, 1)
-    e = E_perp_rand
-    print(f"chosen e = \n{e}")
+    if use_rand:
+        rand = d.np.random.rand(E_perp.shape[1], 1)
+        e = E_perp @ rand
+        print(f"Randomly chosen e =\n{e}\n")
+    else:
+        # Use eigenvector of largest eigenvalue
+        eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
+        evals = d.np.hstack([pair[0] for pair in eig_pairs])
+        evecs = d.np.hstack([pair[1] for pair in eig_pairs])
+        max_eval_index = d.np.argmax(evals)
+        e = evecs[:, max_eval_index].reshape(-1, 1)
+        print(f"Eigenvector-chosen e =\n{e}\n")
 
     # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
     lambda_candidates = []
@@ -289,6 +284,8 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     lambda_ = min(lambda_candidates)
     # evals = [ev for ev in evals if ev >= 1e-7]
     # lambda_ = min(evals)
+
+    print(f"chosen λ = {lambda_}")
 
     # Project and update M
     e_star = e.reshape(1, -1)
