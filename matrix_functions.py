@@ -38,7 +38,7 @@ def file_to_matrix(filename: str) -> 'd.np.ndarray':
     Example:
         >>> matrix = file_to_matrix("inputs/data.txt")
     """
-    matrix = d.np.loadtxt(filename, dtype=complex)
+    matrix = d.np.loadtxt(filename, dtype=float)
     return matrix
 
 def get_eigens(matrix: 'd.np.ndarray') -> tuple['d.np.ndarray', 'd.np.ndarray']:
@@ -257,8 +257,27 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         rand = d.np.random.rand(E_perp.shape[1], 1)
         e = E_perp @ rand
         print(f"Randomly chosen e =\n{e}\n")
+
+        # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
+        lambda_candidates = []
+        for Mi in upperbd_results:
+            try:
+                Mi_inv = d.np.linalg.pinv(Mi)
+                val = d.np.dot(e.T, Mi_inv @ e)
+                if val > 1e-10:  # avoid division by zero, floating point errors
+                    lambda_i = 1 / val
+
+                    if lambda_i > 10e-10:
+                        lambda_candidates.append(lambda_i)
+            except d.np.linalg.LinAlgError:
+                continue  # skip faulty Matrices
+
+        if not lambda_candidates:
+            raise RuntimeError("No valid λ candidates found.")
+
+        lambda_ = min(lambda_candidates)
     else:
-        # Use eigenvector of largest eigenvalue
+        # Use eigenvector of largest eigenvalue as basis vector
         eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
         evals = d.np.hstack([pair[0] for pair in eig_pairs])
         evecs = d.np.hstack([pair[1] for pair in eig_pairs])
@@ -266,30 +285,13 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         e = evecs[:, max_eval_index].reshape(-1, 1)
         print(f"Eigenvector-chosen e =\n{e}\n")
 
-    # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
-    lambda_candidates = []
-    for Mi in upperbd_results:
-        try:
-            Mi_inv = d.np.linalg.pinv(Mi)
-            val = d.np.dot(e.T, Mi_inv @ e)
-            if val > 1e-10:  # avoid division by zero, floating point errors
-                lambda_i = 1 / val
-
-                if not lambda_i < 10e-10:
-                    lambda_candidates.append(lambda_i)
-        except d.np.linalg.LinAlgError:
-            continue  # skip faulty Matrices
-
-    if not lambda_candidates:
-        raise RuntimeError("No valid λ candidates found.")
-
-    lambda_ = min(lambda_candidates)
-    # evals = [ev for ev in evals if ev >= 1e-7]
-    # lambda_ = min(evals)
+        # Use largest eigenvalue for lambda
+        lambda_ = evals[max_eval_index]
 
     print(f"chosen λ = {lambda_}")
 
     # Project and update M
+    e = e / d.np.linalg.norm(e)
     e_star = e.reshape(1, -1)
     projection = lambda_ * e @ e_star
     print(f"projection with limit: \n{projection} \n with dim = {E_perp.shape[1]} \n")
