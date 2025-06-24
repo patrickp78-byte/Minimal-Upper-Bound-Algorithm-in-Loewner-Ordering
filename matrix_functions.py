@@ -289,7 +289,7 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
             if val > 1e-10:  # avoid division by zero, floating point errors
                 lambda_i = 1 / val
 
-                if not lambda_i < 10e-10:
+                if lambda_i > 1e-10:
                     lambda_candidates.append(lambda_i)
         except d.np.linalg.LinAlgError:
             continue  # skip faulty Matrices
