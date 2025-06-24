@@ -283,6 +283,7 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         evecs = d.np.hstack([pair[1] for pair in eig_pairs])
         max_eval_index = d.np.argmax(evals)
         e = evecs[:, max_eval_index].reshape(-1, 1)
+        # e = e / d.np.linalg.norm(e)
         print(f"Eigenvector-chosen e =\n{e}\n")
 
         # Use largest eigenvalue for lambda
@@ -291,7 +292,7 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     print(f"chosen λ = {lambda_}")
 
     # Project and update M
-    e = e / d.np.linalg.norm(e)
+    # e = e / d.np.linalg.norm(e)
     e_star = e.reshape(1, -1)
     projection = lambda_ * e @ e_star
     print(f"projection with limit: \n{projection} \n with dim = {E_perp.shape[1]} \n")
