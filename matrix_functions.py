@@ -147,10 +147,22 @@ def minimality_check(matrices: list['d.np.ndarray'], steps: int = 0, use_rand: b
         print(f"Matrix: \n {M} \n is not an upperbound \n")
 
     if step_1 and not step_2:
+        steps += 1
+        # Check if we're close within our tolerance
+        if steps > dim:
+            epsilon = 1e-4
+            I = d.np.eye(dim)
+            M_eps = M + epsilon * I
+
+            # Check if M_eps is an upper bound
+            step_1_eps, _ = is_upperbound(M_eps, matrices[1:])
+            if step_1_eps:
+                print(f"Stopping early: M + εI is a valid upper bound within ε={epsilon}")
+                return True, M
+
         # Generate new M from projection and try again
         new_M = minimize_upperbound(M, upperbd_results, E, dim, use_rand)
         print(f"New Matrix = \n {new_M} \n")
-        steps += 1
         return minimality_check([new_M] + matrices[1:], steps, use_rand)
 
     return step_1 and step_2, M
@@ -266,6 +278,8 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         e = evecs[:, max_eval_index].reshape(-1, 1)
         print(f"Eigenvector-chosen e =\n{e}\n")
 
+    e = e / d.np.linalg.norm(e)
+    print(f"Normalized e = \n{e}\n")
     # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
     lambda_candidates = []
     for Mi in upperbd_results:
