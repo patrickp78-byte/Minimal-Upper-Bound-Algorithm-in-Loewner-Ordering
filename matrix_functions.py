@@ -285,7 +285,8 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     for Mi in upperbd_results:
         try:
             Mi_inv = d.np.linalg.pinv(Mi)
-            val = d.np.dot(e.T, Mi_inv @ e)
+            val = e.conj().T @ Mi_inv @ e
+
             if val > 1e-10:  # avoid division by zero, floating point errors
                 lambda_i = 1 / val
 
