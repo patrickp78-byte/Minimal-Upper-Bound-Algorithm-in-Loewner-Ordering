@@ -38,7 +38,7 @@ def file_to_matrix(filename: str) -> 'd.np.ndarray':
     Example:
         >>> matrix = file_to_matrix("inputs/data.txt")
     """
-    matrix = d.np.loadtxt(filename, dtype=complex)
+    matrix = d.np.loadtxt(filename, dtype=float)
     return matrix
 
 def get_eigens(matrix: 'd.np.ndarray') -> tuple['d.np.ndarray', 'd.np.ndarray']:
@@ -278,14 +278,22 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
         e = evecs[:, max_eval_index].reshape(-1, 1)
         print(f"Eigenvector-chosen e =\n{e}\n")
 
-    e = e / d.np.linalg.norm(e)
-    print(f"Normalized e = \n{e}\n")
+    # e = e / d.np.linalg.norm(e)
+    # print(f"Normalized e = \n{e}\n")
     # Compute lambda_i = 1 / (e.T @ pinv(M_i) @ e) for each M_i
     lambda_candidates = []
     for Mi in upperbd_results:
         try:
-            Mi_inv = d.np.linalg.pinv(Mi)
-            val = e.conj().T @ Mi_inv @ e
+            try:
+                u = d.np.linalg.solve(Mi, e)
+                print(f"u = {u}")
+                val = u.conj().T @ Mi @ u # check if Mi is invertible
+                print(f"val = {val}")
+            except d.np.linalg.LinAlgError:
+                # Pseudoinverse solution
+                Mi_inv = d.np.linalg.pinv(Mi)
+                val = e.conj().T @ Mi_inv @ e
+                print(f"val = {val}")
 
             if val > 1e-10:  # avoid division by zero, floating point errors
                 lambda_i = 1 / val
@@ -302,11 +310,8 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     # evals = [ev for ev in evals if ev >= 1e-7]
     # lambda_ = min(evals)
 
-    print(f"chosen λ = {lambda_}")
-
     # Project and update M
     e_star = e.reshape(1, -1)
     projection = lambda_ * e @ e_star
-    print(f"projection with limit: \n{projection} \n with dim = {E_perp.shape[1]} \n")
 
     return M - projection
