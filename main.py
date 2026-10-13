@@ -44,7 +44,6 @@ def main():
     evals = [] # list of eigenvalues and eigenvectors
     labels = [] # corresponding file names
     matrices = []
-    use_rand = False
     rand_trials = 1
     args = []
 
@@ -78,7 +77,7 @@ def main():
             print(f"trial {i}")
             steps = 0
             try:
-                is_min_upbd, M = mf.minimality_check(matrices, steps, use_rand)
+                is_min_upbd, M = mf.minimality_check(matrices, steps)
                 eigs = mf.get_eigens(M)
                 label = f"answer_{i}" if is_min_upbd else f"failure_{i}"
             except Exception as e:

@@ -106,7 +106,7 @@ def is_symmetric(matrix: 'd.np.ndarray') -> bool:
     """
     return d.np.allclose(matrix, matrix.T)
 
-def minimality_check(matrices: list['d.np.ndarray'], steps: int = 0, use_rand: bool = False) -> tuple[bool, 'd.np.ndarray']:
+def minimality_check(matrices: list['d.np.ndarray'], steps: int = 0) -> tuple[bool, 'd.np.ndarray']:
     """
     Checks whether the first matrix in the list is a minimal upper bound of the others.
     If it is an upper bound but not minimal, projects onto the orthogonal space and tries again.
@@ -161,9 +161,9 @@ def minimality_check(matrices: list['d.np.ndarray'], steps: int = 0, use_rand: b
                 return True, M
 
         # Generate new M from projection and try again
-        new_M = minimize_upperbound(M, upperbd_results, E, dim, use_rand)
+        new_M = minimize_upperbound(M, upperbd_results, E, dim)
         print(f"New Matrix = \n {new_M} \n")
-        return minimality_check([new_M] + matrices[1:], steps, use_rand)
+        return minimality_check([new_M] + matrices[1:], steps)
 
     return step_1 and step_2, M
 
@@ -232,7 +232,7 @@ def is_minimal(upperbd_results: list['d.np.ndarray'], dim: int) -> tuple[bool, l
 
     return rank >= dim, E
 
-def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray'], E: 'd.np.ndarray', dim: int, use_rand: bool = False) -> 'd.np.ndarray':
+def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray'], E: 'd.np.ndarray', dim: int) -> 'd.np.ndarray':
     """
     Finds a vector in the orthogonal complement of E, and uses it to project M downward
     to attempt finding a minimal upper bound.
@@ -265,18 +265,10 @@ def minimize_upperbound(M: 'd.np.ndarray', upperbd_results: list['d.np.ndarray']
     if E_perp.shape[1] == 0:
         raise RuntimeError("No orthogonal direction found; E_perp is empty.")
 
-    if use_rand:
-        rand = d.np.random.rand(E_perp.shape[1], 1)
-        e = E_perp @ rand
-        print(f"Randomly chosen e =\n{e}\n")
-    else:
-        # Use eigenvector of largest eigenvalue
-        eig_pairs = [get_eigens(matrix) for matrix in upperbd_results]
-        evals = d.np.hstack([pair[0] for pair in eig_pairs])
-        evecs = d.np.hstack([pair[1] for pair in eig_pairs])
-        max_eval_index = d.np.argmax(evals)
-        e = evecs[:, max_eval_index].reshape(-1, 1)
-        print(f"Eigenvector-chosen e =\n{e}\n")
+    # Randomly select e vector
+    rand = d.np.random.rand(E_perp.shape[1], 1)
+    e = E_perp @ rand
+    print(f"Randomly chosen e =\n{e}\n")
 
     # e = e / d.np.linalg.norm(e)
     # print(f"Normalized e = \n{e}\n")
